@@ -16,7 +16,7 @@
 :if ( $needINET = true ) do={
   :log info "AF: Internet is not available"
 
-  # select interface order to switch
+  # Uplink change decision
   :local intToEnable  $int2name
   :local intToDisable $int1name
   :if ( ( [/interface ethernet get $intToDisable disabled] = true ) \
@@ -25,12 +25,17 @@
     :set intToEnable  $int1name
     :set intToDisable $int2name
   }
-  # switch uplink interfaces
+
+  # Shut down VPNs to avoid hanging routes
   :foreach vpn in=$vpns do={ :interface ovpn-client set $vpn disabled=yes }
+  :log info "AF: stopped VPNs"
+
+  # Switch uplink interfaces
   :interface ethernet set [:interface ethernet find name=$intToDisable] disabled=yes
   :interface ethernet set [:interface ethernet find name=$intToEnable]  disabled=no
   :log info "AF: Interface $intToEnable was activated"
-  # check and wait for network availability
+
+  # Wait for the uplink is ready
   :set spentTime 0
   :while ( ( $spentTime < $timeout ) \
     && ( ( [:len [:ip dhcp-client get $intToEnable address] ] = 0 ) \ 
@@ -40,11 +45,13 @@
     :delay 1s;
     :set spentTime ($spentTime + 1)
   }
-  :log info "AF: Spent $spentTime seconds to get $intToEnable online. Starting VPNs."
+  :log info "AF: Spent $spentTime seconds to get $intToEnable online."
+
+  # Uplink is online, so get our VPNs back
+  :log info "AF: Starting VPNs."
   :foreach vpn in=$vpns do={ :interface ovpn-client set $vpn disabled=no }
 
-  # uplink interface switching is done, let we send notifications
-
+  # Get our new public source IP
   :set spentTimeOnURL 0
   :while ( ( $spentTimeOnURL < $timeout ) && ( $myExternalIP = "" ) ) do={
     :set myExternalIP ([:tool fetch mode=http output=user url="http://whatismyip.akamai.com" as-value]->"data")
@@ -53,12 +60,9 @@
   }
   :log info "AF: External IP is $myExternalIP"
 
+  # Telegram notification
   :local localIP [:ip address get [:ip address find interface=$intToEnable] address]
-  :local tgURLwithText ($tgAPIURLforText."Switched uplink to: $intToEnable%0AInterface address: $localIP%0ADHCP took: $spentTime seconds%0AExternal IP is: $myExternalIP")
-  :set spentTimeOnURL 0
-  :while ( ( $spentTimeOnURL < $timeout ) && ( [:tool fetch keep-result=no url=$tgURLwithText] = 0 ) ) do={
-    :delay 1s;
-    :set spentTimeOnURL ($spentTimeOnURL + 1)
-  }
-  :log info "AF: Tried $spentTimeOnURL times to request the URL: $tgURLwithText"
+  :local tgURLwithText ($tgAPIURLforText."Switched uplink to: $intToEnable%0AInterface address: $localIP%0AInterface activation took: $spentTime seconds%0APublic source IP is: $myExternalIP")
+  :tool fetch keep-result=no url=$tgURLwithText
+  :log info "AF: Requested the URL: $tgURLwithText"
 }
