@@ -35,7 +35,7 @@
 :foreach vpn in=$vpns do={ :interface ovpn-client set $vpn disabled=yes }
 :log info "AF: stopped VPNs"
 
-# Get the current states and make the next interface to be activated the first in $interfacesDisabled
+# Get the current states and make the next interface to be activated via picking it to $intToEnable
 :local foundActiveInterface false
 :local intToEnable ($interfaces->0)
 
