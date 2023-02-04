@@ -1,4 +1,4 @@
-:local timeout 30
+:local timeout 25
 :local spentTime 0
 :local spentTimeOnURL 0
 :local tgAPIURLforText "https://api.telegram.org/bot123:ABC/sendMessage\3Fchat_id=-123&text="
