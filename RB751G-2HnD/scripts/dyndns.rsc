@@ -14,8 +14,8 @@
 
 # WAN/public IP interfaces
 :local WANs { 
-    "WAN-L2TP-BeeLine";
-    "WAN-PPPoE-MGTS"
+    "WAN-L2TP-ISP3";
+    "WAN-PPPoE-ISP4"
 }
 
 # Loop through WAN interfaces and look for ones containing an IP

@@ -11,9 +11,9 @@
 
 # WANs interfaces which to be failovered in the round-robin order
 :local interfaces {
-  "WAN-Port3-RT"
-  "WAN-Port4-Starlink"
-  "WAN-Port5-BeeLine"
+  "WAN-Port3-ISP1"
+  "WAN-Port4-ISP2"
+  "WAN-Port5-ISP3"
 }
 
 # Check whether Internet is available
