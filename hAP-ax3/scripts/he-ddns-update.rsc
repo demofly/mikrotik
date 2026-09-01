@@ -1,4 +1,4 @@
-# he-ddns-update-v8
+# he-ddns-update-v9
 # RouterOS 7.x  |  Hurricane Electric DDNS
 
 # --- Глобальная переменная — кеш последнего отправленного IP ---
@@ -9,6 +9,11 @@
 :local ddnspass "YourDDNSpassword123"
 :local waniface "WAN2"
 :local ddnsurl  "https://dyn.dns.he.net/nic/update"
+
+# --- Локальные сущности ---
+:local tunbrokeruser "userlogin"
+:local tunbrokerukey "ikKKkkKKKKkk11KK"
+:local tunbrokerhost "1234567"
 
 # --- Получаем список ID адресов на интерфейсе ---
 :local addrList [:ip address find interface=$waniface]
@@ -64,6 +69,15 @@
                         :log error ("DDNS for HE.net: update rejected by server: [$resp]")
                     }
                 }
+
+	       :local t6 [/interface 6to4 find name="t6to4"]
+     	       :if ([/interface 6to4 get $t6 local-address] != $currentIP) do={
+         	/tool fetch keep-result=no mode=https \
+             	  url="https://$tunbrokeruser:$tunbrokerukey@ipv4.tunnelbroker.net/nic/update?hostname=$tunbrokerhost"
+         	/interface 6to4 set $t6 local-address=$currentIP
+         	/interface 6to4 disable $t6 ; :delay 2s ; /interface 6to4 enable $t6
+         	:log info "HE: tunnel endpoint updated to $currentIP"
+     	       }
             } on-error={
                 :log error ("DDNS for HE.net: fetch failed (network/TLS error)")
             }
